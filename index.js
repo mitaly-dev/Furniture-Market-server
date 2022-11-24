@@ -16,16 +16,29 @@ async function run(){
     try{
         const userCollection=client.db('FurnitureMarket').collection('users')
         const categorycollection=client.db('FurnitureMarket').collection('categories')
+        const activitiesCollection=client.db('FurnitureMarket').collection('activities')
+        const productsCollection=client.db('FurnitureMarket').collection('products')
 
         app.post('/users',async(req,res)=>{
             const user = req.body 
             const result = await userCollection.insertOne(user)
-            console.log(result)
             res.send(result)
         })
 
         app.get('/categories',async(req,res)=>{
             const result = await categorycollection.find({}).toArray()
+            res.send(result)
+        })
+
+        app.get('/activities',async(req,res)=>{
+            const result = await activitiesCollection.find({}).toArray()
+            res.send(result)
+        })
+
+        app.get('/products',async(req,res)=>{
+            const category = req.query.category
+            const query={category:category}
+            const result=await productsCollection.find(query).toArray()
             res.send(result)
         })
     }
