@@ -1,4 +1,5 @@
 const express = require('express')
+var jwt = require('jsonwebtoken');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const app = express()
@@ -19,6 +20,12 @@ async function run(){
         const activitiesCollection=client.db('FurnitureMarket').collection('activities')
         const productsCollection=client.db('FurnitureMarket').collection('products')
 
+        app.get('/jwt',(req,res)=>{
+            const email = req.query.email 
+            const token = jwt.sign({email:email},process.env.JWT_TOKEN,{expiresIn:'24h'})
+            res.send(token)
+        })
+
         app.post('/users',async(req,res)=>{
             const user = req.body 
             const result = await userCollection.insertOne(user)
@@ -35,8 +42,8 @@ async function run(){
             res.send(result)
         })
 
-        app.get('/products',async(req,res)=>{
-            const category = req.query.category
+        app.get('/products/:category',async(req,res)=>{
+            const category = req.params.category
             const query={category:category}
             const result=await productsCollection.find(query).toArray()
             res.send(result)
