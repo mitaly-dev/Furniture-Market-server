@@ -5,7 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const app = express()
 const cors = require('cors')
 const port = process.env.PORT || 5000 
-const stripe = require("stripe")(`${process.env.SECRET_KEY}`);
+const stripe = require("stripe")(`sk_test_51M6CE4BMtIhTvUhsjjwowd0TVare61yEtFADEVCRP3q3DxrbgtOI2XNnvvFeGsal680QelErzCop5KDlbIoNQfHr002idxqSLh`);
 
 app.use(cors())
 app.use(express.json())
@@ -23,6 +23,7 @@ async function run(){
         const ordersCollection=client.db('FurnitureMarket').collection('orders')
         const reportedProductCollection=client.db('FurnitureMarket').collection('reportedProduct')
         const wishListCollection=client.db('FurnitureMarket').collection('wishList')
+        const paymentCollection=client.db('FurnitureMarket').collection('payments')
 
         app.get('/jwt',async(req,res)=>{
             const email = req.query.email 
@@ -64,7 +65,6 @@ async function run(){
         app.put('/users/verify',async(req,res)=>{
             const email=req.query.email
             const info = req.body
-           console.log(info)
             const filter ={email:email}
             const options = { upsert: true }
             const updateDoc ={
@@ -94,7 +94,6 @@ async function run(){
          //  get seller product
          app.get('/products',async(req,res)=>{
             const email = req.query.email 
-            console.log(email)
             const query ={email:email}
             const result = await productsCollection.find(query).toArray()
             res.send(result)
@@ -141,7 +140,6 @@ async function run(){
             const reportResult = await productsCollection.deleteOne(query)
             const wishListResult = await wishListCollection.deleteOne(query)
             if(result.deletedCount>0 && reportResult.deletedCount>0 && wishListResult.deletedCount>0){
-                console.log(result,reportResult,wishListResult)
                 res.send({message:"Delete successfull"})
             }else{
                 res.send({message:"Please try again"})
@@ -153,12 +151,11 @@ async function run(){
             const product = req.body 
             const title =product.title
             const email=product.email
-            console.log(email,title)
+          
             const query = {$and:[{title:title},{email:email}]}
             const wishProduct = await wishListCollection.findOne(query)
             if(!wishProduct){
                 const result = await wishListCollection.insertOne(product)
-                console.log(result)
                 res.send(result)
             }
             else{
@@ -184,9 +181,26 @@ async function run(){
             const email = req.query.email 
             const query = {email:email}
             const result = await ordersCollection.find(query).toArray()
+            res.send(result)
+        })
+        
+         //  get seller product
+         app.get('/order/payment/:title',async(req,res)=>{
+            const title = req.params.title
+            const query ={title:title}
+            const result = await ordersCollection.findOne(query)
+            res.send(result)
+         })
+
+        //  buyer payment
+
+        app.post('/payments',async(req,res)=>{
+            const payment = req.body 
+            const result = await paymentCollection.insertOne(payment)
             console.log(result)
             res.send(result)
         })
+
 
         // verify user role
         app.get('/verifyRole',async(req,res)=>{
