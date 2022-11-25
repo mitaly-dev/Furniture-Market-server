@@ -5,6 +5,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const app = express()
 const cors = require('cors')
 const port = process.env.PORT || 5000 
+const stripe = require("stripe")(`${process.env.SECRET_KEY}`);
 
 app.use(cors())
 app.use(express.json())
@@ -35,6 +36,23 @@ async function run(){
             }
            
         })
+        app.post('/create-payment-intent',async(req,res)=>{
+            const booking = req.body 
+            const price = booking.price
+            const amount = price*100
+            console.log(booking)
+            const paymentIntent = await stripe.paymentIntents.create({
+                currency:'usd',
+                amount:amount,
+                payment_method_types: [
+                    "card"
+                  ],
+            })
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+              });
+        })
+
 
         //post users information in db
         app.post('/users',async(req,res)=>{
@@ -54,7 +72,6 @@ async function run(){
             }
             const result = await userCollection.updateOne(filter,updateDoc,options)
             const productUpdate = await productsCollection.updateMany(filter,updateDoc,options)
-            console.log(result)
             if(result.acknowledged && productUpdate.acknowledged){
                 res.send(result)
             }
@@ -73,6 +90,15 @@ async function run(){
             const result=await productsCollection.find(query).toArray()
             res.send(result)
         })
+
+         //  get seller product
+         app.get('/products',async(req,res)=>{
+            const email = req.query.email 
+            console.log(email)
+            const query ={email:email}
+            const result = await productsCollection.find(query).toArray()
+            res.send(result)
+         })
 
          // product post in db
          app.post('/products',async(req,res)=>{
@@ -110,10 +136,16 @@ async function run(){
         app.delete('/reportedProduct',async(req,res)=>{
             const title = req.query.title 
             const query = {title:title}
+           
             const result = await reportedProductCollection.deleteOne(query)
-            const productResult = await productsCollection.deleteOne(query)
+            const reportResult = await productsCollection.deleteOne(query)
             const wishListResult = await wishListCollection.deleteOne(query)
-            console.log(result)
+            if(result.deletedCount>0 && reportResult.deletedCount>0 && wishListResult.deletedCount>0){
+                console.log(result,reportResult,wishListResult)
+                res.send({message:"Delete successfull"})
+            }else{
+                res.send({message:"Please try again"})
+            }
         })
 
         // product wishlist
@@ -135,15 +167,6 @@ async function run(){
          })
 
 
-        //  app.delete('/products/:id',async(req,res)=>{
-        //     const id = req.params.id 
-        //     const query = {_id:ObjectId(id)}
-        //     const result = await productsCollection.deleteOne(query)
-        //     res.send(result)
-        //  })
-
-
-
         // get activity seciton information
         app.get('/activities',async(req,res)=>{
             const result = await activitiesCollection.find({}).toArray()
@@ -154,6 +177,14 @@ async function run(){
         app.post('/orders',async(req,res)=>{
             const order = req.body 
             const result = await ordersCollection.insertOne(order)
+            res.send(result)
+        })
+
+        app.get('/orders',async(req,res)=>{
+            const email = req.query.email 
+            const query = {email:email}
+            const result = await ordersCollection.find(query).toArray()
+            console.log(result)
             res.send(result)
         })
 
