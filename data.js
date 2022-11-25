@@ -94,3 +94,22 @@
       "category": "dining room"
     }
   ]
+
+  [
+    {
+      "question": "What are the different ways to manage a state in a React application?",
+      "answer": "\the most popular ones are Redux, MobX, and the built-in Context API"
+    },
+    {
+      "question": "How does prototypical inheritance work?",
+      "answer": "bed"
+    },
+    {
+      "question": "What is a unit test? Why should we write unit tests?",
+      "answer": "bed"
+    },
+    {
+      "question": "React vs. Angular vs. Vue?",
+      "answer": "bed"
+    }
+  ]

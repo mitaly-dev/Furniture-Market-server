@@ -40,8 +40,7 @@ async function run(){
         app.post('/create-payment-intent',async(req,res)=>{
             const booking = req.body 
             const price = booking.price
-            const amount = price*100
-            console.log(booking)
+            const amount = parseInt(price)*100
             const paymentIntent = await stripe.paymentIntents.create({
                 currency:'usd',
                 amount:amount,
@@ -82,11 +81,11 @@ async function run(){
             const result = await categorycollection.find({}).toArray()
             res.send(result)
         })
-
+        
         // get categorybase products
         app.get('/products/:category',async(req,res)=>{
             const category = req.params.category
-            const query={category:category}
+            const query={$and : [{paid:{$ne:true}},{category:category}]}
             const result=await productsCollection.find(query).toArray()
             res.send(result)
         })
@@ -163,6 +162,13 @@ async function run(){
             }
          })
 
+         app.get('/wishList',async(req,res)=>{
+            const email = req.query.email 
+            const query={$and : [{paid:{$ne:true}},{email:email}]}
+            const result = await wishListCollection.find(query).toArray()
+            console.log(result)
+            res.send(result)
+        })
 
         // get activity seciton information
         app.get('/activities',async(req,res)=>{
@@ -179,7 +185,7 @@ async function run(){
 
         app.get('/orders',async(req,res)=>{
             const email = req.query.email 
-            const query = {email:email}
+            const query={$and : [{paid:{$ne:true}},{email:email}]}
             const result = await ordersCollection.find(query).toArray()
             res.send(result)
         })
@@ -188,7 +194,11 @@ async function run(){
          app.get('/order/payment/:title',async(req,res)=>{
             const title = req.params.title
             const query ={title:title}
-            const result = await ordersCollection.findOne(query)
+            
+            let result = await ordersCollection.findOne(query)
+            if(!result){
+                result = await wishListCollection.findOne(query)
+            }
             res.send(result)
          })
 
@@ -196,9 +206,25 @@ async function run(){
 
         app.post('/payments',async(req,res)=>{
             const payment = req.body 
+            const title = payment.title
             const result = await paymentCollection.insertOne(payment)
-            console.log(result)
-            res.send(result)
+            const filter = {title:title}
+            const options = {upsert:true}
+            const updateDoc={
+                $set:{
+                    paid:true
+                }
+            }
+            const deleteProduct= await ordersCollection.deleteMany(filter)
+            const updateResult=await productsCollection.updateOne(filter,updateDoc,options)
+            const wishListResult= await wishListCollection.deleteMany(filter)
+
+            if(result.acknowledged===true && updateResult.acknowledged===true && wishListResult.acknowledged===true){
+                console.log('wish',wishListResult)
+                console.log('deleet',deleteProduct)
+                console.log('produt',updateResult)
+                res.send(result)
+            }
         })
 
 
@@ -237,9 +263,6 @@ async function run(){
             const result = await userCollection.deleteOne(query)
             res.send(result)
         })
-
-       
-       
 
     }
     finally{
