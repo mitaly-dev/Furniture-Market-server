@@ -346,6 +346,13 @@ async function run(){
             res.send(result)
         })
 
+        app.get('/mybuyers',async(req,res)=>{
+            const email = req.query.email 
+            const query = {sellerEmail:email}
+            const result = await ordersCollection.find(query).toArray()
+            res.send(result)
+        })
+
         // blog 
         app.get('/blogs',async(req,res)=>{
             const result = await blogCollection.find({}).toArray()

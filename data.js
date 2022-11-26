@@ -113,3 +113,27 @@
       "answer": "React is a free and open-source front-end JavaScript library for building user interfaces based on UI components. It is maintained by Meta and a community of individual developers and companies.AngularJS is a discontinued free and open-source JavaScript-based web framework for developing single-page applications. It was maintained mainly by Google and a community of individuals and corporations .Vue.js is a lightweight, JavaScript framework for building reactive web user interfaces. Vue extends standard HTML and CSS to create a suite of powerful tools for building the front end of interactive web applications.VueJS is two-way binding; whereas ReactJS is one-way binding and that's why VueJs uses more computer resources than ReactJS. "
     }
   ]
+
+
+//   ## About Website :
+// - registration form to create Buyer and seller
+// - login form for login to the website
+// - Buyers will see: My orders,My wishlist,
+// - Sellers will see: My Products , My buyers.
+// - Sellers can Add his product.
+// - Admin will see: All Sellers, All Buyers, Reported Items
+// - Admin can delete Reported Items
+// - Buyer can order product and pay 
+// - User can logout from his account 
+
+// ## Technologies :
+// - React.js
+// - React router
+// - React-context-api
+// - Tailwind CSS
+// - HTML
+// - Firebase
+// - React package
+// - Node.js
+// - Express.js
+// - Mongodb
