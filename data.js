@@ -98,18 +98,18 @@
   [
     {
       "question": "What are the different ways to manage a state in a React application?",
-      "answer": "\the most popular ones are Redux, MobX, and the built-in Context API"
+      "answer": "The most popular ones are Redux, and the built-in Context API is different ways to manage a state in a React application"
     },
     {
       "question": "How does prototypical inheritance work?",
-      "answer": "bed"
+      "answer": "The Prototypal Inheritance is a feature in javascript used to add methods and properties in objects. It is a method by which an object can inherit the properties and methods of another object."
     },
     {
       "question": "What is a unit test? Why should we write unit tests?",
-      "answer": "bed"
+      "answer": "The main objective of unit testing is to isolate written code to test and determine if it works as intended. Unit testing is an important step in the development process, because if done correctly, it can help detect early flaws in code which may be more difficult to find in later testing stages."
     },
     {
       "question": "React vs. Angular vs. Vue?",
-      "answer": "bed"
+      "answer": "React is a free and open-source front-end JavaScript library for building user interfaces based on UI components. It is maintained by Meta and a community of individual developers and companies.AngularJS is a discontinued free and open-source JavaScript-based web framework for developing single-page applications. It was maintained mainly by Google and a community of individuals and corporations .Vue.js is a lightweight, JavaScript framework for building reactive web user interfaces. Vue extends standard HTML and CSS to create a suite of powerful tools for building the front end of interactive web applications.VueJS is two-way binding; whereas ReactJS is one-way binding and that's why VueJs uses more computer resources than ReactJS. "
     }
   ]
