@@ -6,7 +6,7 @@ const app = express()
 const cors = require('cors');
 const { query } = require('express');
 const port = process.env.PORT || 5000 
-const stripe = require("stripe")(`sk_test_51M6CE4BMtIhTvUhsjjwowd0TVare61yEtFADEVCRP3q3DxrbgtOI2XNnvvFeGsal680QelErzCop5KDlbIoNQfHr002idxqSLh`);
+const stripe = require("stripe")(`${process.env.SECRET_KEY}`);
 
 app.use(cors())
 app.use(express.json())
@@ -52,7 +52,7 @@ async function run(){
                 const token = jwt.sign({email:email},process.env.JWT_TOKEN,{expiresIn:'24h'})
                 res.send({accessToken:token})
             }else{
-                res.send({message:'user not found in database'})
+                res.send({message:'User not found in database'})
             }
            
         })
@@ -85,10 +85,19 @@ async function run(){
         //post users information in db
         app.post('/users',async(req,res)=>{
             const user = req.body 
-            const result = await userCollection.insertOne(user)
-            res.send(result)
+            const email = user.email
+            const query = {email:email}
+            const prevUser = await userCollection.findOne(query)
+            if(!prevUser){
+                const result = await userCollection.insertOne(user)
+                res.send(result)
+            }else{
+                res.send({message:"You can not create multiple account by one mail address"})
+            }
+           
         })
 
+        // update user verify
         app.put('/users/verify',verifyJWT,async(req,res)=>{
             const email=req.query.email
             const info = req.body
@@ -142,7 +151,7 @@ async function run(){
         })
 
          //  product advertise
-         app.put('/products/:id',async(req,res)=>{
+         app.put('/products/:id',verifyJWT,async(req,res)=>{
             const id = req.params.id 
             const product = req.body 
             const filter = {_id:ObjectId(id)}
@@ -154,7 +163,6 @@ async function run(){
             const prevProduct = await productsCollection.findOne(query)
             if(prevProduct){
                 const result=await productsCollection.updateOne(filter,updateDoc,options)
-                console.log(result)
                 res.send(result)
             }else{
                 res.send({message:"Already added for advertise"})
@@ -184,7 +192,6 @@ async function run(){
             const reportProduct = await reportedProductCollection.findOne(query)
             if(!reportProduct){
                 const result = await reportedProductCollection.insertOne(product)
-                
                 res.send(result)
             }
             else{
@@ -199,7 +206,7 @@ async function run(){
            
             const result = await reportedProductCollection.deleteOne(query)
             const reportResult = await productsCollection.deleteOne(query)
-            const wishListResult = await wishListCollection.deleteOne(query)
+            const wishListResult = await wishListCollection.deleteMany(query)
             if(result.deletedCount>0 && reportResult.deletedCount>0 && wishListResult.deletedCount>0){
                 res.send({message:"Delete successfull"})
             }else{
@@ -224,30 +231,13 @@ async function run(){
             }
          })
 
-         app.get('/wishList',async(req,res)=>{
+        //  get wishlist
+         app.get('/wishList',verifyJWT,async(req,res)=>{
             const email = req.query.email 
             const query={email:email}
             const result = await wishListCollection.find(query).toArray()
             res.send(result)
         })
-
-
-        // erwer
-        app.post('/wishList',async(req,res)=>{
-            const product = req.body 
-            const title =product.title
-            const email=product.email
-          
-            const query = {$and:[{title:title},{email:email}]}
-            const wishProduct = await wishListCollection.findOne(query)
-            if(!wishProduct){
-                const result = await wishListCollection.insertOne(product)
-                res.send(result)
-            }
-            else{
-                res.send({message:'you already added your wishlist'})
-            }
-         })
 
          // get activity seciton information
         app.get('/activities',async(req,res)=>{
@@ -271,6 +261,7 @@ async function run(){
            
         })
 
+        // get all orders
         app.get('/orders',verifyJWT,async(req,res)=>{
             const email = req.query.email 
             const query={email:email}
@@ -278,7 +269,7 @@ async function run(){
             res.send(result)
         })
         
-         //  get seller product
+         //  get order product for payment
          app.get('/order/payment/:title',verifyJWT,async(req,res)=>{
             const email = req.decoded.email
             const title = req.params.title
@@ -291,28 +282,35 @@ async function run(){
             res.send(result)
          })
 
-        //  buyer payment
 
+        //  buyer payment for order product and wishlist product
         app.put('/payments',async(req,res)=>{
             const payment = req.body 
+            const orderId = req.orderId
             const title = payment.title
             const email = payment.email
             const result = await paymentCollection.insertOne(payment)
-            const filter = {title:title}
-            const filter2 = {$and:[{title:title},{email:email}]}
+            const filter = {$and:[{title:title},{email:email}]}
+            const filter2 = {title:title}
             const options = {upsert:true}
             const updateDoc={
                 $set:{
                     paid:true
                 }
             }
-            const orderResult= await ordersCollection.updateOne(filter2,updateDoc,options)
-            const updateResult=await productsCollection.updateOne(filter,updateDoc,options)
+            const orderResult= await ordersCollection.updateOne(filter,updateDoc,options)
+            const updateResult=await productsCollection.updateOne(filter2,updateDoc,options)
+            const wishProductResult=await wishListCollection.updateOne(filter,updateDoc,options)
             
-           const wishproduct=await wishListCollection.findOne(filter2)
-           if(wishproduct){
-            const wishListResult = await wishListCollection.updateOne(filter2,updateDoc,options)
+           const wishOrder = await wishListCollection.findOne({_id:ObjectId(orderId)})
+           const order = await ordersCollection.findOne(filter)
+           if(wishOrder && !order){
+                const final = await ordersCollection.insertOne(wishOrder)
+                const wishListResult = await wishListCollection.deleteOne(filter)
+           }else{
+                 wishListCollection.deleteOne(filter)
            }
+
             if(result.acknowledged===true && updateResult.acknowledged===true || orderResult.acknowledged===true){
                 res.send(result)
             }
@@ -346,7 +344,7 @@ async function run(){
             res.send(result)
         })
 
-        app.get('/mybuyers',async(req,res)=>{
+        app.get('/mybuyers',verifyJWT,async(req,res)=>{
             const email = req.query.email 
             const query = {sellerEmail:email}
             const result = await ordersCollection.find(query).toArray()
@@ -358,8 +356,7 @@ async function run(){
             const result = await blogCollection.find({}).toArray()
             res.send(result)
         })
-
-       
+ 
 
     }
     finally{
@@ -368,6 +365,10 @@ async function run(){
 }
 run().catch(error=>console.error(error.message))
 
+
+app.get('/',(req,res)=>{
+    res.send({status:'success'})
+})
 app.listen(port,()=>{
     console.log(`Furniture market is running on ${port}`)
 })
