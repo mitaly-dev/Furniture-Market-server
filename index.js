@@ -286,31 +286,33 @@ async function run(){
         //  buyer payment for order product and wishlist product
         app.put('/payments',async(req,res)=>{
             const payment = req.body 
-            const orderId = req.orderId
             const title = payment.title
             const email = payment.email
             const result = await paymentCollection.insertOne(payment)
             const filter = {$and:[{title:title},{email:email}]}
             const filter2 = {title:title}
+            const query = {email:{$ne:email}}
             const options = {upsert:true}
             const updateDoc={
                 $set:{
                     paid:true
                 }
             }
-            const orderResult= await ordersCollection.updateOne(filter,updateDoc,options)
+            const insertInOrder={
+                $set: {
+                    price : payment.price,
+                    category : payment.category,
+                    productImg :payment.productImg,
+                    paid:true,
+                    email:email
+                }
+            }
+            const orderResult= await ordersCollection.updateOne(filter,insertInOrder,options)
             const updateResult=await productsCollection.updateOne(filter2,updateDoc,options)
-            const wishProductResult=await wishListCollection.updateOne(filter,updateDoc,options)
-            
-           const wishOrder = await wishListCollection.findOne({_id:ObjectId(orderId)})
-           const order = await ordersCollection.findOne(filter)
-           if(wishOrder && !order){
-                const final = await ordersCollection.insertOne(wishOrder)
-                const wishListResult = await wishListCollection.deleteOne(filter)
-           }else{
-                 wishListCollection.deleteOne(filter)
-           }
+            const deleteWish = await wishListCollection.deleteMany(filter2)
+            const orderDelete = await ordersCollection.deleteMany(query)
 
+        
             if(result.acknowledged===true && updateResult.acknowledged===true || orderResult.acknowledged===true){
                 res.send(result)
             }
