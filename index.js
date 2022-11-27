@@ -119,7 +119,6 @@ async function run(){
                 $set: request
             }
             const result = await userCollection.updateOne(filter,updateDoc,options)
-            console.log(result)
             res.send({
                 result,
                 message:'pending'
@@ -135,7 +134,6 @@ async function run(){
                 $set: request
             }
             const result = await userCollection.updateOne(filter,updateDoc)
-            console.log(result)
             res.send({
                 result,
                 message:'cancel'
@@ -189,13 +187,19 @@ async function run(){
             const updateDoc={
                 $set:product
             }
-            const query = {$and:[{_id:ObjectId(id)},{advertise:{$ne:true}}]}
+            const query = {$and:[{_id:ObjectId(id)},{advertise:{$ne:true}},{paid:{$ne:true}}]}
             const prevProduct = await productsCollection.findOne(query)
+            const prevProduct2 = await productsCollection.findOne({$and:[{_id:ObjectId(id)},{paid:true}]})
+            
             if(prevProduct){
                 const result=await productsCollection.updateOne(filter,updateDoc,options)
-                res.send(result)
-            }else{
-                res.send({message:"Already added for advertise"})
+                return res.send(result)
+            }
+            else if(prevProduct2){
+                return res.send({message:"Sold out product can not display in advertise"})
+            }
+            else{
+                return res.send({message:"Already added for advertise"})
             }
          })
 
