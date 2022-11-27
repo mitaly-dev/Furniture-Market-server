@@ -3,18 +3,15 @@ var jwt = require('jsonwebtoken');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const app = express()
-const cors = require('cors');
-const { query } = require('express');
+const cors = require('cors')
+const { query } = require('express')
 const port = process.env.PORT || 5000 
-const stripe = require("stripe")(`${process.env.SECRET_KEY}`);
-
+const stripe = require("stripe")(`${process.env.SECRET_KEY}`)
 app.use(cors())
 app.use(express.json())
 
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ojtfupc.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-
 
 const verifyJWT=(req,res,next)=>{
     const authHeader=req.headers.authorization
@@ -30,7 +27,6 @@ const verifyJWT=(req,res,next)=>{
         next()
     })
 }
-
 
 async function run(){
     try{
@@ -113,6 +109,40 @@ async function run(){
             }
         })
 
+          // send request to become na admin
+          app.put('/users/sendRequest',async(req,res)=>{
+            const request = req.body
+            const email = req.query.email 
+            const filter = {email:email}
+            const options = {upsert:true}
+            const updateDoc = {
+                $set: request
+            }
+            const result = await userCollection.updateOne(filter,updateDoc,options)
+            console.log(result)
+            res.send({
+                result,
+                message:'pending'
+            })
+          })
+
+          // cancel admin request
+          app.patch('/users/cancelRequest',async(req,res)=>{
+            const request = req.body
+            const email = req.query.email 
+            const filter = {email:email}
+            const updateDoc = {
+                $set: request
+            }
+            const result = await userCollection.updateOne(filter,updateDoc)
+            console.log(result)
+            res.send({
+                result,
+                message:'cancel'
+            })
+          })
+
+
         // get all category
         app.get('/categories',async(req,res)=>{
             const result = await categorycollection.find({}).toArray()
@@ -187,7 +217,6 @@ async function run(){
             const product = req.body 
             const title =product.title
             const email=product.userEmail
-           
             const query = {$and:[{title:title},{userEmail:email}]}
             const reportProduct = await reportedProductCollection.findOne(query)
             if(!reportProduct){
@@ -203,7 +232,6 @@ async function run(){
         app.delete('/reportedProduct',async(req,res)=>{
             const title = req.query.title 
             const query = {title:title}
-           
             const result = await reportedProductCollection.deleteOne(query)
             const reportResult = await productsCollection.deleteOne(query)
             const wishListResult = await wishListCollection.deleteMany(query)
@@ -219,7 +247,6 @@ async function run(){
             const product = req.body 
             const title =product.title
             const email=product.email
-          
             const query = {$and:[{title:title},{email:email}]}
             const wishProduct = await wishListCollection.findOne(query)
             if(!wishProduct){
@@ -282,7 +309,6 @@ async function run(){
             res.send(result)
          })
 
-
         //  buyer payment for order product and wishlist product
         app.put('/payments',async(req,res)=>{
             const payment = req.body 
@@ -311,8 +337,6 @@ async function run(){
             const updateResult=await productsCollection.updateOne(filter2,updateDoc,options)
             const deleteWish = await wishListCollection.deleteMany(filter2)
             const orderDelete = await ordersCollection.deleteMany(query)
-
-        
             if(result.acknowledged===true && updateResult.acknowledged===true || orderResult.acknowledged===true){
                 res.send(result)
             }
@@ -359,7 +383,6 @@ async function run(){
             res.send(result)
         })
  
-
     }
     finally{
 
@@ -367,10 +390,6 @@ async function run(){
 }
 run().catch(error=>console.error(error.message))
 
-
-app.get('/',(req,res)=>{
-    res.send({status:'success'})
-})
 app.listen(port,()=>{
     console.log(`Furniture market is running on ${port}`)
 })
